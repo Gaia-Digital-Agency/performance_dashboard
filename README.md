@@ -11,6 +11,7 @@ It consists of a Node.js backend that periodically runs Lighthouse audits, store
 - **Dynamic Site List:** Websites to be monitored can be easily managed in a `sites.json` file.
 - **Data Visualization:** The dashboard displays the latest scores for all sites and provides historical charts for individual sites.
 - **Automatic Data Cleanup:** Old records are automatically purged to keep the database lean.
+- **Site Sync Script:** Easy-to-use script (`site_updates.sh`) to sync database with sites.json and run audits.
 
 ## Tech Stack
 
@@ -40,3 +41,50 @@ The application is composed of three main services:
 |     (React)       |      |    (Express.js)   |      |  (PostgreSQL)   |
 +-------------------+      +-------------------+      +-----------------+
 ```
+
+## Quick Start
+
+### Managing Sites
+
+Add or remove websites in `sites.json`:
+```json
+[
+  "https://example.com",
+  "https://another-site.com"
+]
+```
+
+### Syncing Sites & Running Audits
+
+After updating `sites.json`, use the site sync script:
+
+```bash
+# Run audits in foreground (see progress in real-time)
+./site_updates.sh
+
+# Run audits in background (faster, runs in background)
+./site_updates.sh --background
+
+# Force re-audit all sites even if they have data
+./site_updates.sh --force
+```
+
+The script will:
+1. Read all sites from `sites.json`
+2. Remove any sites from the database that are no longer in `sites.json`
+3. Run Lighthouse audits for all sites
+4. Show you a summary of the results
+
+### Starting the Dashboard
+
+```bash
+# Start all services (API + Scheduler + Frontend)
+./start.sh
+
+# Or start individually:
+node app.js           # API server (port 3001)
+node scheduler.js     # Scheduled audits
+cd dashboard-ui && npm start  # Frontend (port 3000)
+```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.

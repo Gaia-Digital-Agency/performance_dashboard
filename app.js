@@ -2,7 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
-const { dbConfig, API_PORT } = require('./config');
+const { dbConfig, API_PORT, SITES_TO_MONITOR } = require('./config');
 
 const app = express();
 
@@ -34,7 +34,25 @@ app.get('/api/latest-reports', async (req, res) => {
             ORDER BY url, created_at DESC;
         `;
         const { rows } = await pool.query(query);
-        res.json(rows);
+
+        // Create a map of existing reports by URL
+        const reportMap = new Map(rows.map(row => [row.url, row]));
+
+        // Return all sites from sites.json, with report data if available
+        const allSites = SITES_TO_MONITOR.map(url => {
+            const report = reportMap.get(url);
+            return report || {
+                url: url,
+                performance_score: null,
+                accessibility_score: null,
+                best_practices_score: null,
+                seo_score: null,
+                pwa_score: null,
+                created_at: null
+            };
+        });
+
+        res.json(allSites);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
