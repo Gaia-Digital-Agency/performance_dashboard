@@ -23,6 +23,11 @@ async function runLighthouse(url, browser) {
     });
 
     // Extract the most important scores
+    // Extract Core Web Vitals from audits (use ?? to handle 0 values correctly)
+    const lcp = lhr.audits['largest-contentful-paint']?.numericValue ?? null;
+    const cls = lhr.audits['cumulative-layout-shift']?.numericValue ?? null;
+    const tbt = lhr.audits['total-blocking-time']?.numericValue ?? null;
+
     return {
         url: url,
         performance_score: Math.round(lhr.categories.performance.score * 100),
@@ -30,6 +35,9 @@ async function runLighthouse(url, browser) {
         best_practices_score: Math.round(lhr.categories['best-practices'].score * 100),
         seo_score: Math.round(lhr.categories.seo.score * 100),
         pwa_score: 0, // PWA category removed in newer Lighthouse versions
+        lcp_ms: lcp !== null ? Math.round(lcp) : null,
+        cls: cls !== null ? parseFloat(cls.toFixed(4)) : null,
+        tbt_ms: tbt !== null ? Math.round(tbt) : null,
     };
 }
 
@@ -40,8 +48,8 @@ async function runLighthouse(url, browser) {
  */
 async function saveReportToDB(report, client) {
     const query = `
-        INSERT INTO reports(url, performance_score, accessibility_score, best_practices_score, seo_score, pwa_score, created_at)
-        VALUES($1, $2, $3, $4, $5, $6, NOW())
+        INSERT INTO reports(url, performance_score, accessibility_score, best_practices_score, seo_score, pwa_score, lcp_ms, cls, tbt_ms, created_at)
+        VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
     `;
     const values = [
         report.url,
@@ -50,6 +58,9 @@ async function saveReportToDB(report, client) {
         report.best_practices_score,
         report.seo_score,
         report.pwa_score,
+        report.lcp_ms,
+        report.cls,
+        report.tbt_ms,
     ];
 
     try {
